@@ -1,19 +1,16 @@
 package com.idyl.snailman.pathfinder;
 
+import com.idyl.snailman.Transport;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.coords.WorldPoint;
-import com.idyl.snailman.Transport;
+import java.util.*;
 
 @Slf4j
 public class Pathfinder implements Runnable {
@@ -40,13 +37,13 @@ public class Pathfinder implements Runnable {
 
         isComplete = false;
 
-        if(existingPath  != null) {
+        if (existingPath != null) {
             Node prev = null;
             boolean foundStart = false;
-            for(int i = 0; i < existingPath.size(); i++) {
+            for (int i = 0; i < existingPath.size(); i++) {
                 WorldPoint point = existingPath.get(i);
 
-                if(!point.equals(start) && !foundStart) continue;
+                if (!point.equals(start) && !foundStart) continue;
                 foundStart = true;
 
                 Node n = new Node(existingPath.get(i), prev);
@@ -61,7 +58,7 @@ public class Pathfinder implements Runnable {
     public static void writeTransportToFile(String transport) {
         try {
             Files.write(Paths.get("src/main/resources/transports.txt"), transport.concat("\n").getBytes(), StandardOpenOption.APPEND);
-        }catch (IOException e) {
+        } catch (IOException e) {
             log.error("Failed to write transport to file", e);
         }
     }
@@ -119,7 +116,7 @@ public class Pathfinder implements Runnable {
             addNeighbors(node);
         }
         long elapsed = Instant.now().toEpochMilli() - startTime;
-        System.out.println("Finished calculation in "+elapsed+"ms");
+        System.out.println("Finished calculation in " + elapsed + "ms");
 
         done = true;
         boundary.clear();

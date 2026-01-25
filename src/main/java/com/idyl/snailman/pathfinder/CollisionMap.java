@@ -1,9 +1,10 @@
 package com.idyl.snailman.pathfinder;
 
+import net.runelite.api.coords.WorldPoint;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.runelite.api.coords.WorldPoint;
 
 public class CollisionMap extends SplitFlagMap {
     public CollisionMap(int regionSize, Map<Position, byte[]> compressedRegions) {
@@ -52,8 +53,8 @@ public class CollisionMap extends SplitFlagMap {
         int z = position.getPlane();
 
         List<WorldPoint> neighbors = new ArrayList<>();
-        boolean[] traversable = new boolean[] {
-                w(x, y, z), e(x, y, z), s(x, y, z), n(x, y, z), sw(x, y, z), se(x, y, z), nw(x, y, z), ne(x, y, z)
+        boolean[] traversable = new boolean[]{
+            w(x, y, z), e(x, y, z), s(x, y, z), n(x, y, z), sw(x, y, z), se(x, y, z), nw(x, y, z), ne(x, y, z)
         };
 
         for (int i = 0; i < traversable.length; i++) {

@@ -1,12 +1,13 @@
 package com.idyl.snailman.pathfinder;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
+import com.idyl.snailman.Transport;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
-import com.idyl.snailman.Transport;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 public class PathfinderConfig {
     public static final Duration CALCULATION_CUTOFF = Duration.ofSeconds(5);

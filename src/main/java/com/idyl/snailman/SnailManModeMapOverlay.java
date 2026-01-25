@@ -1,11 +1,11 @@
 package com.idyl.snailman;
 
 import net.runelite.api.Client;
+import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
-import net.runelite.api.Point;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.util.ImageUtil;
@@ -13,8 +13,8 @@ import net.runelite.client.util.ImageUtil;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.awt.geom.Area;
+import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,7 +42,7 @@ public class SnailManModeMapOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if(!config.showOnMap()) return null;
+        if (!config.showOnMap()) return null;
 
         if (client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER) == null) {
             return null;
@@ -51,7 +51,7 @@ public class SnailManModeMapOverlay extends Overlay {
         mapClipArea = getWorldMapClipArea(Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds());
         graphics.setClip(mapClipArea);
 
-        if(this.developerMode && plugin.pathfinder != null) {
+        if (this.developerMode && plugin.pathfinder != null) {
             List<WorldPoint> path = plugin.pathfinder.getPath();
             for (WorldPoint point : path) {
                 Point graphicsPoint = plugin.mapWorldPointToGraphicsPoint(point);
@@ -68,7 +68,7 @@ public class SnailManModeMapOverlay extends Overlay {
     }
 
     private BufferedImage getMapIconImage() {
-        if(mapIcon == null) {
+        if (mapIcon == null) {
             mapIcon = ImageUtil.loadImageResource(getClass(), "/marker.png");
         }
 

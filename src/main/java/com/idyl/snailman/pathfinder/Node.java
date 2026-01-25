@@ -1,9 +1,10 @@
 package com.idyl.snailman.pathfinder;
 
+import net.runelite.api.coords.WorldPoint;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import net.runelite.api.coords.WorldPoint;
 
 public class Node {
     public final WorldPoint position;

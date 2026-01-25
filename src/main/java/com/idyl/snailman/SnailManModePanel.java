@@ -1,27 +1,22 @@
 package com.idyl.snailman;
 
-import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-
-import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.timetracking.Tab;
-import net.runelite.client.plugins.timetracking.TabContentPanel;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
 @Singleton
-public class SnailManModePanel extends PluginPanel
-{
+public class SnailManModePanel extends PluginPanel {
     private final ItemManager itemManager;
     private final SnailManModePlugin plugin;
 
@@ -32,12 +27,8 @@ public class SnailManModePanel extends PluginPanel
 
     private boolean active;
 
-    @Nullable
-    private TabContentPanel activeTabPanel = null;
-
     @Inject
-    public SnailManModePanel(ItemManager itemManager, SnailManModePlugin plugin)
-    {
+    public SnailManModePanel(ItemManager itemManager, SnailManModePlugin plugin) {
         super(false);
         this.itemManager = itemManager;
         this.plugin = plugin;

@@ -25,22 +25,22 @@ public abstract class SplitFlagMap {
         this.regionSize = regionSize;
         this.flagCount = flagCount;
         regionMaps = CacheBuilder
-                .newBuilder()
-                .weigher((Weigher<Position, FlagMap>) (k, v) -> v.flags.size() / 8)
-                .maximumWeight(MAXIMUM_SIZE)
-                .build(CacheLoader.from(position -> {
-                    byte[] compressedRegion = compressedRegions.get(position);
+            .newBuilder()
+            .weigher((Weigher<Position, FlagMap>) (k, v) -> v.flags.size() / 8)
+            .maximumWeight(MAXIMUM_SIZE)
+            .build(CacheLoader.from(position -> {
+                byte[] compressedRegion = compressedRegions.get(position);
 
-                    if (compressedRegion == null) {
-                        return new FlagMap(position.x * regionSize, position.y * regionSize, (position.x + 1) * regionSize - 1, (position.y + 1) * regionSize - 1, this.flagCount);
-                    }
+                if (compressedRegion == null) {
+                    return new FlagMap(position.x * regionSize, position.y * regionSize, (position.x + 1) * regionSize - 1, (position.y + 1) * regionSize - 1, this.flagCount);
+                }
 
-                    try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(compressedRegion))) {
-                        return new FlagMap(Util.readAllBytes(in), this.flagCount);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }));
+                try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(compressedRegion))) {
+                    return new FlagMap(Util.readAllBytes(in), this.flagCount);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }));
     }
 
     public boolean get(int x, int y, int z, int flag) {
@@ -63,8 +63,8 @@ public abstract class SplitFlagMap {
         @Override
         public boolean equals(Object o) {
             return o instanceof Position &&
-                    ((Position) o).x == x &&
-                    ((Position) o).y == y;
+                ((Position) o).x == x &&
+                ((Position) o).y == y;
         }
 
         @Override

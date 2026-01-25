@@ -5,11 +5,11 @@ import java.util.BitSet;
 
 public class FlagMap {
     public static final int PLANE_COUNT = 4;
-    protected final BitSet flags;
     public final int minX;
     public final int minY;
     public final int maxX;
     public final int maxY;
+    protected final BitSet flags;
     private final int width;
     private final int height;
     private final int flagCount;
