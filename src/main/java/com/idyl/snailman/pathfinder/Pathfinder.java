@@ -11,9 +11,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import com.idyl.snailman.Transport;
 
+@Slf4j
 public class Pathfinder implements Runnable {
     @Getter
     private final WorldPoint start;
@@ -60,7 +62,7 @@ public class Pathfinder implements Runnable {
         try {
             Files.write(Paths.get("src/main/resources/transports.txt"), transport.concat("\n").getBytes(), StandardOpenOption.APPEND);
         }catch (IOException e) {
-            System.out.println(e);
+            log.error("Failed to write transport to file", e);
         }
     }
 

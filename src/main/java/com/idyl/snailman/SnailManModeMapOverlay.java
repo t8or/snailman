@@ -2,53 +2,56 @@ package com.idyl.snailman;
 
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.api.Point;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.geom.Area;
 import java.util.List;
+import java.util.Objects;
 
 public class SnailManModeMapOverlay extends Overlay {
     private final Client client;
     private final SnailManModePlugin plugin;
     private final SnailManModeConfig config;
+    private final boolean developerMode;
 
     private Area mapClipArea;
 
     private BufferedImage mapIcon;
 
     @Inject
-    private SnailManModeMapOverlay(Client client, SnailManModePlugin plugin, SnailManModeConfig config) {
+    private SnailManModeMapOverlay(Client client, SnailManModePlugin plugin, SnailManModeConfig config, @Named("developerMode") boolean developerMode) {
         this.client = client;
         this.plugin = plugin;
         this.config = config;
+        this.developerMode = developerMode;
         setPosition(OverlayPosition.DYNAMIC);
-        setPriority(OverlayPriority.LOW);
+        setPriority(Overlay.PRIORITY_LOW);
         setLayer(OverlayLayer.MANUAL);
-        drawAfterLayer(WidgetInfo.WORLD_MAP_VIEW);
+        drawAfterLayer(InterfaceID.Worldmap.MAP_CONTAINER);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
         if(!config.showOnMap()) return null;
 
-        if (client.getWidget(WidgetInfo.WORLD_MAP_VIEW) == null) {
+        if (client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER) == null) {
             return null;
         }
 
-        mapClipArea = getWorldMapClipArea(client.getWidget(WidgetInfo.WORLD_MAP_VIEW).getBounds());
+        mapClipArea = getWorldMapClipArea(Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds());
         graphics.setClip(mapClipArea);
 
-        if(SnailManModePlugin.DEV_MODE && plugin.pathfinder != null) {
+        if(this.developerMode && plugin.pathfinder != null) {
             List<WorldPoint> path = plugin.pathfinder.getPath();
             for (WorldPoint point : path) {
                 Point graphicsPoint = plugin.mapWorldPointToGraphicsPoint(point);
@@ -73,8 +76,8 @@ public class SnailManModeMapOverlay extends Overlay {
     }
 
     private Area getWorldMapClipArea(Rectangle baseRectangle) {
-        final Widget overview = client.getWidget(WidgetInfo.WORLD_MAP_OVERVIEW_MAP);
-        final Widget surfaceSelector = client.getWidget(WidgetInfo.WORLD_MAP_SURFACE_SELECTOR);
+        final Widget overview = client.getWidget(InterfaceID.Worldmap.OVERVIEW_CONTAINER);
+        final Widget surfaceSelector = client.getWidget(InterfaceID.Worldmap.MAPLIST_BOX_GRAPHIC0);
 
         Area clipArea = new Area(baseRectangle);
 

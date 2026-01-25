@@ -10,6 +10,7 @@ import net.runelite.api.Point;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.awt.*;
 import java.util.List;
 import java.awt.image.BufferedImage;
@@ -21,54 +22,56 @@ public class SnailManModeOverlay extends Overlay {
     private final Client client;
     private final SnailManModeConfig config;
     private final SnailManModePlugin plugin;
+    private final boolean developerMode;
 
     BufferedImage snailShell = null;
 
     @Inject
-    private SnailManModeOverlay(Client client, SnailManModeConfig config, SnailManModePlugin plugin) {
+    private SnailManModeOverlay(Client client, SnailManModeConfig config, SnailManModePlugin plugin, @Named("developerMode") boolean developerMode) {
         this.client = client;
         this.config = config;
         this.plugin = plugin;
+        this.developerMode = developerMode;
 
         setPosition(OverlayPosition.DYNAMIC);
         setPriority(OverlayPriority.LOW);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }
 
-//    private void renderTransports(Graphics2D graphics) {
-//        for (WorldPoint a : plugin.pathfinderConfig.getTransports().keySet()) {
-//            drawTransport(graphics, a);
-//
-//            java.awt.Point ca = tileCenter(a);
-//
-//            if (ca == null) {
-//                continue;
-//            }
-//
-//            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
-//                WorldPoint b = t.getOrigin();
-//                java.awt.Point cb = tileCenter(b);
-//
-//                if (cb != null) {
-//                    graphics.drawLine(ca.x, ca.y, cb.x, cb.y);
-//                }
-//            }
-//
-//            StringBuilder s = new StringBuilder();
-//            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
-//                WorldPoint b = t.getDestination();
-//                if (b.getPlane() > a.getPlane()) {
-//                    s.append("+");
-//                } else if (b.getPlane() < a.getPlane()) {
-//                    s.append("-");
-//                } else {
-//                    s.append("=");
-//                }
-//            }
-//            graphics.setColor(Color.WHITE);
-//            graphics.drawString(s.toString(), ca.x, ca.y);
-//        }
-//    }
+    private void renderTransports(Graphics2D graphics) {
+        for (WorldPoint a : plugin.pathfinderConfig.getTransports().keySet()) {
+            drawTransport(graphics, a);
+
+            java.awt.Point ca = tileCenter(a);
+
+            if (ca == null) {
+                continue;
+            }
+
+            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
+                WorldPoint b = t.getOrigin();
+                java.awt.Point cb = tileCenter(b);
+
+                if (cb != null) {
+                    graphics.drawLine(ca.x, ca.y, cb.x, cb.y);
+                }
+            }
+
+            StringBuilder s = new StringBuilder();
+            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
+                WorldPoint b = t.getDestination();
+                if (b.getPlane() > a.getPlane()) {
+                    s.append("+");
+                } else if (b.getPlane() < a.getPlane()) {
+                    s.append("-");
+                } else {
+                    s.append("=");
+                }
+            }
+            graphics.setColor(Color.WHITE);
+            graphics.drawString(s.toString(), ca.x, ca.y);
+        }
+    }
 
     private java.awt.Point tileCenter(WorldPoint b) {
         if (b.getPlane() != client.getPlane()) {
@@ -92,12 +95,12 @@ public class SnailManModeOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-//        if(SnailManModePlugin.DEV_MODE) renderTransports(graphics);
+        if(this.developerMode) renderTransports(graphics);
 
         WorldPoint snailPoint = plugin.getSnailWorldPoint();
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
 
-        if(SnailManModePlugin.DEV_MODE && plugin.pathfinder != null) {
+        if(this.developerMode && plugin.pathfinder != null) {
             List<WorldPoint> path = plugin.pathfinder.getPath();
             for (WorldPoint point : path) {
                 drawTile(graphics, point, Color.GREEN, new BasicStroke((float) 2));
@@ -111,8 +114,8 @@ public class SnailManModeOverlay extends Overlay {
             return null;
         }
 
-        drawTile(graphics, snailPoint, config.color(), new BasicStroke((float) 2));
-        drawImg(graphics, snailPoint);
+//        drawTile(graphics, snailPoint, config.color(), new BasicStroke((float) 2));
+//        drawImg(graphics, snailPoint);
         return null;
     }
 

@@ -10,6 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.timetracking.Tab;
 import net.runelite.client.plugins.timetracking.TabContentPanel;
@@ -44,11 +45,17 @@ public class SnailManModePanel extends PluginPanel
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARK_GRAY_COLOR);
         display.setBorder(new EmptyBorder(10, 10, 8, 10));
+        display.setLayout(new GridLayout(0, 1, 0, 5));
 
         JButton resetButton = new JButton("Reset Snail Data");
         resetButton.addActionListener(l -> plugin.reset());
 
         display.add(resetButton);
+
+        JButton testAnim = new JButton("Test Death Anim");
+        testAnim.addActionListener(l -> plugin.testDeathAnim());
+
+        display.add(testAnim);
 
         add(display, BorderLayout.NORTH);
     }

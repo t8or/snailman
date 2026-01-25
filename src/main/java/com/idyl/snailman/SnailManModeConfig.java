@@ -4,9 +4,13 @@ import net.runelite.client.config.*;
 
 import java.awt.*;
 
-@ConfigGroup("snailmanmode")
+@ConfigGroup(SnailManModeConfig.CONFIG_GROUP)
 public interface SnailManModeConfig extends Config
 {
+	String CONFIG_GROUP = "snailmanmode";
+	String CONFIG_KEY_SNAIL_LOC = "snailWorldPoint";
+	String CONFIG_KEY_IS_ALIVE = "isAlive";
+
 	@ConfigItem(
 			keyName = "snailColor",
 			name = "Snail Color",
