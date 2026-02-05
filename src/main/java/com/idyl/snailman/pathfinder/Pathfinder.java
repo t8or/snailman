@@ -35,7 +35,7 @@ public class Pathfinder implements Runnable {
         this.start = start;
         this.target = target;
 
-        isComplete = false;
+        this.isComplete = false;
 
         if (existingPath != null) {
             Node prev = null;
@@ -47,7 +47,7 @@ public class Pathfinder implements Runnable {
                 foundStart = true;
 
                 Node n = new Node(existingPath.get(i), prev);
-                boundary.add(n);
+                this.boundary.add(n);
                 prev = n;
             }
         }
@@ -64,62 +64,62 @@ public class Pathfinder implements Runnable {
     }
 
     private void addNeighbor(Node node, WorldPoint neighbor) {
-        if (!visited.add(neighbor)) {
+        if (!this.visited.add(neighbor)) {
             return;
         }
-        boundary.add(new Node(neighbor, node));
+        this.boundary.add(new Node(neighbor, node));
     }
 
     private void addNeighbors(Node node) {
-        for (WorldPoint neighbor : config.getMap().getNeighbors(node.position)) {
-            addNeighbor(node, neighbor);
+        for (WorldPoint neighbor : this.config.getMap().getNeighbors(node.position)) {
+            this.addNeighbor(node, neighbor);
         }
 
-        for (Transport transport : config.getTransports().getOrDefault(node.position, new ArrayList<>())) {
-            addNeighbor(node, transport.getDestination());
+        for (Transport transport : this.config.getTransports().getOrDefault(node.position, new ArrayList<>())) {
+            this.addNeighbor(node, transport.getDestination());
         }
     }
 
     @Override
     public void run() {
-        boundary.add(new Node(start, null));
+        this.boundary.add(new Node(this.start, null));
 
-        Node nearest = boundary.get(0);
+        Node nearest = this.boundary.get(0);
         int bestDistance = Integer.MAX_VALUE;
         Instant cutoffTime = Instant.now().plus(PathfinderConfig.CALCULATION_CUTOFF);
         long startTime = Instant.now().toEpochMilli();
 
-        while (!boundary.isEmpty()) {
-            Node node = boundary.remove(0);
+        while (!this.boundary.isEmpty()) {
+            Node node = this.boundary.remove(0);
 
-            if (node.position.equals(target)) {
-                path = node.getPath();
+            if (node.position.equals(this.target)) {
+                this.path = node.getPath();
                 System.out.println("Found best path.");
-                isComplete = true;
+                this.isComplete = true;
                 break;
             }
 
-            int distance = node.position.distanceTo(target);
+            int distance = node.position.distanceTo(this.target);
             if (distance < bestDistance) {
-                path = node.getPath();
+                this.path = node.getPath();
                 nearest = node;
                 bestDistance = distance;
                 cutoffTime = Instant.now().plus(PathfinderConfig.CALCULATION_CUTOFF);
             }
 
             if (Instant.now().isAfter(cutoffTime)) {
-                path = nearest.getPath();
+                this.path = nearest.getPath();
                 long elapsed = Instant.now().toEpochMilli() - startTime;
                 break;
             }
 
-            addNeighbors(node);
+            this.addNeighbors(node);
         }
         long elapsed = Instant.now().toEpochMilli() - startTime;
         System.out.println("Finished calculation in " + elapsed + "ms");
 
-        done = true;
-        boundary.clear();
-        visited.clear();
+        this.done = true;
+        this.boundary.clear();
+        this.visited.clear();
     }
 }

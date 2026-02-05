@@ -27,11 +27,11 @@ public class Transport {
         String[] parts_origin = parts[0].split(DELIM);
         String[] parts_destination = parts[1].split(DELIM);
 
-        origin = new WorldPoint(
+        this.origin = new WorldPoint(
             Integer.parseInt(parts_origin[0]),
             Integer.parseInt(parts_origin[1]),
             Integer.parseInt(parts_origin[2]));
-        destination = new WorldPoint(
+        this.destination = new WorldPoint(
             Integer.parseInt(parts_destination[0]),
             Integer.parseInt(parts_destination[1]),
             Integer.parseInt(parts_destination[2]));

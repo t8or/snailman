@@ -34,50 +34,50 @@ public class SnailManModeMapOverlay extends Overlay {
         this.plugin = plugin;
         this.config = config;
         this.developerMode = developerMode;
-        setPosition(OverlayPosition.DYNAMIC);
-        setPriority(Overlay.PRIORITY_LOW);
-        setLayer(OverlayLayer.MANUAL);
-        drawAfterLayer(InterfaceID.Worldmap.MAP_CONTAINER);
+        this.setPosition(OverlayPosition.DYNAMIC);
+        this.setPriority(Overlay.PRIORITY_LOW);
+        this.setLayer(OverlayLayer.MANUAL);
+        this.drawAfterLayer(InterfaceID.Worldmap.MAP_CONTAINER);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (!config.showOnMap()) return null;
+        if (!this.config.showOnMap()) return null;
 
-        if (client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER) == null) {
+        if (this.client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER) == null) {
             return null;
         }
 
-        mapClipArea = getWorldMapClipArea(Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds());
-        graphics.setClip(mapClipArea);
+        this.mapClipArea = this.getWorldMapClipArea(Objects.requireNonNull(this.client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds());
+        graphics.setClip(this.mapClipArea);
 
-        if (this.developerMode && plugin.pathfinder != null) {
-            List<WorldPoint> path = plugin.pathfinder.getPath();
+        if (this.developerMode && this.plugin.pathfinder != null) {
+            List<WorldPoint> path = this.plugin.pathfinder.getPath();
             for (WorldPoint point : path) {
-                Point graphicsPoint = plugin.mapWorldPointToGraphicsPoint(point);
+                Point graphicsPoint = this.plugin.mapWorldPointToGraphicsPoint(point);
                 graphics.setColor(Color.GREEN);
                 graphics.drawRect(graphicsPoint.getX(), graphicsPoint.getY(), 1, 1);
             }
         }
 
-        BufferedImage marker = getMapIconImage();
-        Point point = plugin.mapWorldPointToGraphicsPoint(plugin.getSnailWorldPoint());
+        BufferedImage marker = this.getMapIconImage();
+        Point point = this.plugin.mapWorldPointToGraphicsPoint(this.plugin.getSnailWorldPoint());
         graphics.drawImage(marker, point.getX() - marker.getWidth() / 2, point.getY() - marker.getHeight() / 2, null);
 
         return null;
     }
 
     private BufferedImage getMapIconImage() {
-        if (mapIcon == null) {
-            mapIcon = ImageUtil.loadImageResource(getClass(), "/marker.png");
+        if (this.mapIcon == null) {
+            this.mapIcon = ImageUtil.loadImageResource(this.getClass(), "/marker.png");
         }
 
-        return mapIcon;
+        return this.mapIcon;
     }
 
     private Area getWorldMapClipArea(Rectangle baseRectangle) {
-        final Widget overview = client.getWidget(InterfaceID.Worldmap.OVERVIEW_CONTAINER);
-        final Widget surfaceSelector = client.getWidget(InterfaceID.Worldmap.MAPLIST_BOX_GRAPHIC0);
+        final Widget overview = this.client.getWidget(InterfaceID.Worldmap.OVERVIEW_CONTAINER);
+        final Widget surfaceSelector = this.client.getWidget(InterfaceID.Worldmap.MAPLIST_BOX_GRAPHIC0);
 
         Area clipArea = new Area(baseRectangle);
 

@@ -12,39 +12,39 @@ public class CollisionMap extends SplitFlagMap {
     }
 
     public boolean n(int x, int y, int z) {
-        return get(x, y, z, 0);
+        return this.get(x, y, z, 0);
     }
 
     public boolean s(int x, int y, int z) {
-        return n(x, y - 1, z);
+        return this.n(x, y - 1, z);
     }
 
     public boolean e(int x, int y, int z) {
-        return get(x, y, z, 1);
+        return this.get(x, y, z, 1);
     }
 
     public boolean w(int x, int y, int z) {
-        return e(x - 1, y, z);
+        return this.e(x - 1, y, z);
     }
 
     private boolean ne(int x, int y, int z) {
-        return n(x, y, z) && e(x, y + 1, z) && e(x, y, z) && n(x + 1, y, z);
+        return this.n(x, y, z) && this.e(x, y + 1, z) && this.e(x, y, z) && this.n(x + 1, y, z);
     }
 
     private boolean nw(int x, int y, int z) {
-        return n(x, y, z) && w(x, y + 1, z) && w(x, y, z) && n(x - 1, y, z);
+        return this.n(x, y, z) && this.w(x, y + 1, z) && this.w(x, y, z) && this.n(x - 1, y, z);
     }
 
     private boolean se(int x, int y, int z) {
-        return s(x, y, z) && e(x, y - 1, z) && e(x, y, z) && s(x + 1, y, z);
+        return this.s(x, y, z) && this.e(x, y - 1, z) && this.e(x, y, z) && this.s(x + 1, y, z);
     }
 
     private boolean sw(int x, int y, int z) {
-        return s(x, y, z) && w(x, y - 1, z) && w(x, y, z) && s(x - 1, y, z);
+        return this.s(x, y, z) && this.w(x, y - 1, z) && this.w(x, y, z) && this.s(x - 1, y, z);
     }
 
     public boolean isBlocked(int x, int y, int z) {
-        return !n(x, y, z) && !s(x, y, z) && !e(x, y, z) && !w(x, y, z);
+        return !this.n(x, y, z) && !this.s(x, y, z) && !this.e(x, y, z) && !this.w(x, y, z);
     }
 
     public List<WorldPoint> getNeighbors(WorldPoint position) {
@@ -54,7 +54,7 @@ public class CollisionMap extends SplitFlagMap {
 
         List<WorldPoint> neighbors = new ArrayList<>();
         boolean[] traversable = new boolean[]{
-            w(x, y, z), e(x, y, z), s(x, y, z), n(x, y, z), sw(x, y, z), se(x, y, z), nw(x, y, z), ne(x, y, z)
+            this.w(x, y, z), this.e(x, y, z), this.s(x, y, z), this.n(x, y, z), this.sw(x, y, z), this.se(x, y, z), this.nw(x, y, z), this.ne(x, y, z)
         };
 
         for (int i = 0; i < traversable.length; i++) {

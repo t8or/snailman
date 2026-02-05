@@ -11,6 +11,6 @@ class TeleportTimer extends Timer {
     TeleportTimer(Duration duration, BufferedImage image, SnailManModePlugin plugin) {
         super(duration.toMillis(), ChronoUnit.MILLIS, image, plugin);
         this.setTooltip("You are too afraid to cast a teleport spell.");
-        setPriority(InfoBoxPriority.MED);
+        this.setPriority(InfoBoxPriority.MED);
     }
 }

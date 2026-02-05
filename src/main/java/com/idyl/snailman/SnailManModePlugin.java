@@ -26,6 +26,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.Plugin;
@@ -120,7 +121,6 @@ public class SnailManModePlugin extends Plugin {
     private ItemManager itemManager;
 
     @Getter
-    @Setter
     private WorldPoint snailWorldPoint;
 
     private NavigationButton navButton;
@@ -137,6 +137,9 @@ public class SnailManModePlugin extends Plugin {
     private int tickCount = 0;
     private WorldPoint lastPlayerPoint;
     private RuneLiteObject snailObject;
+    private Model snailModel;
+    private Animation snailAnimation;
+    private boolean wasInScene;
 
     private static String getImgTag(int iconIndex) {
         return "<img=" + iconIndex + ">";
@@ -149,75 +152,74 @@ public class SnailManModePlugin extends Plugin {
 
     @Override
     protected void startUp() {
-        loadResources();
-        isLoggedIn = false;
-        onSeasonalWorld = false;
-        isAlive = true;
-        isDying = false;
-        lastSaveTime = Instant.EPOCH.getEpochSecond();
-        overlayManager.add(snailManModeOverlay);
-        overlayManager.add(snailManModeMapOverlay);
+        this.loadResources();
+        this.isLoggedIn = false;
+        this.onSeasonalWorld = false;
+        this.isAlive = true;
+        this.isDying = false;
+        this.lastSaveTime = Instant.EPOCH.getEpochSecond();
+        this.overlayManager.add(this.snailManModeOverlay);
+        this.overlayManager.add(this.snailManModeMapOverlay);
 
-        SnailManModePanel panel = injector.getInstance(SnailManModePanel.class);
+        this.clientThread.invokeLater(() -> {
+            this.snailModel = this.client.loadModel(4108);
+            this.snailAnimation = this.client.loadAnimation(AnimationID.SNAIL_WALK);
+        });
 
         final BufferedImage icon = ImageUtil.loadImageResource(SnailManModePlugin.class, "/snail.png");
 
-        navButton = NavigationButton.builder()
+        SnailManModePanel panel = this.injector.getInstance(SnailManModePanel.class);
+        this.navButton = NavigationButton.builder()
             .panel(panel)
             .tooltip("SnailMan Mode")
             .icon(icon)
             .priority(90)
             .build();
 
-        clientToolbar.addNavigation(navButton);
+        this.clientToolbar.addNavigation(this.navButton);
     }
 
     @Override
     protected void shutDown() {
-        overlayManager.remove(snailManModeOverlay);
-        overlayManager.remove(snailManModeMapOverlay);
-        clientToolbar.removeNavigation(navButton);
-        infoBoxManager.removeIf(t -> t instanceof TeleportTimer);
-        saveData();
+        this.overlayManager.remove(this.snailManModeOverlay);
+        this.overlayManager.remove(this.snailManModeMapOverlay);
+        this.clientToolbar.removeNavigation(this.navButton);
+        this.infoBoxManager.removeIf(t -> t instanceof TeleportTimer);
+        this.destroySnailObject();
+        this.saveData();
     }
 
     public void testDeathAnim() {
-        clientThread.invokeLater(() -> {
-//			isDying = true;
-//			deathPoint = client.getLocalPlayer().getWorldLocation();
-//			client.playSoundEffect(SoundEffectID.ATTACK_HIT);
-//			client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DEATH);
-//			client.getLocalPlayer().setAnimationFrame(0);
-//			client.getLocalPlayer().createSpotAnim(SNARE_SPOT_ANIM_ID, SpotanimID.SNARE_IMPACT, 30, 0);
+        this.clientThread.invokeLater(() -> {
+            this.isDying = true;
+            this.deathPoint = this.client.getLocalPlayer().getWorldLocation();
+            this.client.playSoundEffect(SoundEffectID.ATTACK_HIT);
+            this.client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DEATH);
+            this.client.getLocalPlayer().setAnimationFrame(0);
+            this.client.getLocalPlayer().createSpotAnim(SNARE_SPOT_ANIM_ID, SpotanimID.SNARE_IMPACT, 30, 0);
 
-            if (this.snailObject != null)
-                this.snailObject.setActive(false);
-            this.snailObject = client.createRuneLiteObject();
-            LocalPoint localLocation = client.getLocalPlayer().getLocalLocation();
-            localLocation = localLocation.plus(256, 256);
-            snailObject.setLocation(localLocation, 0);
-            snailObject.setModel(client.loadModel(4108));
-            snailObject.setAnimation(client.loadAnimation(AnimationID.SNAIL_READY));
-            snailObject.setActive(true);
+//            LocalPoint localLocation = client.getLocalPlayer().getLocalLocation();
+//            localLocation = localLocation.plus(256, 256);
+//            snailObject.setLocation(localLocation, 0);
         });
     }
 
     private void addSnailmanIcon(ChatMessage chatMessage) {
-        if (!isAlive) return;
+        if (!this.isAlive) return;
 
         String name = chatMessage.getName();
 
-        boolean isLocalPlayer = Text.standardize(name).equalsIgnoreCase(Text.standardize(client.getLocalPlayer().getName()));
+        boolean isLocalPlayer = Text.standardize(name).equalsIgnoreCase(Text.standardize(this.client.getLocalPlayer().getName()));
 
         if (!isLocalPlayer) return;
 
-        chatMessage.getMessageNode().setName(getImgTag(snailmanIconOffset) + Text.removeTags(name));
+        chatMessage.getMessageNode().setName(getImgTag(this.snailmanIconOffset) + Text.removeTags(name));
     }
 
     private WorldPoint getSavedSnailWorldPoint() {
         if (this.configManager.getRSProfileKey() == null) return null;
 
-        final WorldPoint point = configManager.getRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_SNAIL_LOC, WorldPoint.class);
+        final WorldPoint point = this.configManager.getRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_SNAIL_LOC, WorldPoint.class);
 
         if (point == null) {
             return DEFAULT_SNAIL_START;
@@ -229,7 +231,7 @@ public class SnailManModePlugin extends Plugin {
     private void saveSnailWorldPoint() {
         if (this.configManager.getRSProfileKey() == null) return;
 
-        this.configManager.setRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_SNAIL_LOC, snailWorldPoint);
+        this.configManager.setRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_SNAIL_LOC, this.snailWorldPoint);
     }
 
     private void saveData() {
@@ -237,28 +239,32 @@ public class SnailManModePlugin extends Plugin {
         System.out.println(this.configManager.getRSProfileKey());
         if (this.configManager.getRSProfileKey() == null) return;
 
-        saveSnailWorldPoint();
-        configManager.setRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_IS_ALIVE, isAlive);
+        this.saveSnailWorldPoint();
+        this.configManager.setRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_IS_ALIVE, this.isAlive);
 
-        lastSaveTime = Instant.EPOCH.getEpochSecond();
+        this.lastSaveTime = Instant.EPOCH.getEpochSecond();
     }
 
     public void reset() {
-        setSnailWorldPoint(DEFAULT_SNAIL_START);
-        pathfinder = null;
-        isAlive = true;
-        isDying = false;
-        deathPoint = null;
+        this.clientThread.invoke(() -> {
+            this.snailObject.setActive(false);
+            this.setSnailWorldPoint(DEFAULT_SNAIL_START);
+        });
+        this.pathfinder = null;
+        this.isAlive = true;
+        this.isDying = false;
+        this.deathPoint = null;
+        this.wasInScene = false;
         horrorCloseFlag = false;
-        client.getLocalPlayer().setAnimation(-1);
-        client.getLocalPlayer().removeSpotAnim(SNARE_SPOT_ANIM_ID);
-        saveData();
+        this.client.getLocalPlayer().setAnimation(-1);
+        this.client.getLocalPlayer().removeSpotAnim(SNARE_SPOT_ANIM_ID);
+        this.saveData();
     }
 
     @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded event) {
-        if (client.isKeyPressed(KeyCode.KC_SHIFT) && event.getOption().equals(WALK_HERE) && this.developerMode) {
-            WorldView wv = client.getWorldView(event.getMenuEntry().getWorldViewId());
+        if (this.client.isKeyPressed(KeyCode.KC_SHIFT) && event.getOption().equals(WALK_HERE) && this.developerMode) {
+            WorldView wv = this.client.getWorldView(event.getMenuEntry().getWorldViewId());
             if (wv == null) {
                 return;
             }
@@ -267,138 +273,157 @@ public class SnailManModePlugin extends Plugin {
                 return;
             }
             final WorldPoint worldPoint = WorldPoint.fromLocalInstance(this.client, selectedSceneTile.getLocalLocation());
-            addMenuEntry(event, ADD_START, TRANSPORT, worldPoint);
-            addMenuEntry(event, ADD_END, TRANSPORT, worldPoint);
-            addMenuEntry(event, MOVE_SNAIL, SNAIL, worldPoint);
+            this.addMenuEntry(event, ADD_START, TRANSPORT, worldPoint);
+            this.addMenuEntry(event, ADD_END, TRANSPORT, worldPoint);
+            this.addMenuEntry(event, MOVE_SNAIL, SNAIL, worldPoint);
         }
     }
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged gameStateChanged) {
-        if (gameStateChanged.getGameState() == GameState.LOGGED_IN && !isLoggedIn) {
-            final WorldPoint point = getSavedSnailWorldPoint();
-            String savedAlive = configManager.getRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_IS_ALIVE);
-            setSnailWorldPoint(point);
-            currentPathIndex = 1;
-            isAlive = savedAlive == null || Boolean.parseBoolean(savedAlive);
-            isLoggedIn = true;
-            onSeasonalWorld = isSeasonalWorld(client.getWorld());
-        } else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN && isLoggedIn) {
-            isLoggedIn = false;
-            saveData();
-            pathfinder = null;
+        if (gameStateChanged.getGameState() == GameState.LOGGED_IN && !this.isLoggedIn) {
+            String savedAlive = this.configManager.getRSProfileConfiguration(CONFIG_GROUP, CONFIG_KEY_IS_ALIVE);
+            this.currentPathIndex = 1;
+            this.isAlive = savedAlive == null || Boolean.parseBoolean(savedAlive);
+            this.isLoggedIn = true;
+            this.onSeasonalWorld = this.isSeasonalWorld(this.client.getWorld());
+
+            this.clientThread.invoke(() -> {
+                final WorldPoint point = this.getSavedSnailWorldPoint();
+                this.setSnailWorldPoint(point);
+
+                if (this.config.visualMode() == SnailManModeConfig.SnailVisualMode.MODEL) {
+                    this.createSnailObject();
+                }
+            });
+        } else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN && this.isLoggedIn) {
+            this.isLoggedIn = false;
+            this.saveData();
+            this.pathfinder = null;
+            if (this.config.visualMode() == SnailManModeConfig.SnailVisualMode.MODEL) {
+                this.destroySnailObject();
+            }
+        } else if (gameStateChanged.getGameState() == GameState.LOADING) {
+            this.clientThread.invokeLater(this::createSnailObject);
         }
     }
 
     @Subscribe
     public void onGameTick(GameTick tick) {
-        if (!isLoggedIn || isSeasonalWorld(client.getWorld())) return;
+//        log.debug("game tick");
+        if (!this.isLoggedIn || this.isSeasonalWorld(this.client.getWorld())) return;
 
-        WorldPoint playerPoint = client.getLocalPlayer().getWorldLocation();
+        WorldPoint playerPoint = this.client.getLocalPlayer().getWorldLocation();
 
-        if (isDying) {
-            if (!deathPoint.equals(playerPoint)) {
-                log.debug("have moved, resetting animation");
-                isDying = false;
+        if (this.isDying) {
+            if (!this.deathPoint.equals(playerPoint)) {
+                this.isDying = false;
                 // need to set to an actual animation to "finish" the death animation
                 // idle doesn't set some flag so when running death again it starts at the end
-                client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DANCING);
+                this.client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DANCING);
 //				client.getLocalPlayer().setAnimation(-1);
             }
         }
 
-        if (config.pauseSnail()) {
+        this.handleSnail(playerPoint);
+
+        this.lastPlayerPoint = playerPoint;
+        this.wasInScene = WorldPoint.isInScene(this.client.getLocalPlayer().getWorldView(), this.snailWorldPoint.getX(), this.snailWorldPoint.getY());
+//        log.debug("wasInScene: {}", this.wasInScene);
+
+        if (Instant.EPOCH.getEpochSecond() - this.lastSaveTime >= 60 && this.isLoggedIn) {
+            this.saveData();
+        }
+    }
+
+    private void handleSnail(WorldPoint playerPoint) {
+        if (!this.wasInScene && WorldPoint.isInScene(this.client.getLocalPlayer().getWorldView(), this.snailWorldPoint.getX(), this.snailWorldPoint.getY())) {
+            log.debug("entered scene");
+            this.createSnailObject();
+        }
+
+        if (this.config.pauseSnail()) {
             return;
         }
 
-        tickCount++;
+        this.tickCount++;
 
-        long distanceToSnail = playerPoint.distanceTo2D(snailWorldPoint);
-        boolean snailShouldMove = tickCount % config.moveSpeed() == 0 || (distanceToSnail <= RECALCULATION_THRESHOLD && config.speedBoost());
+        long distanceToSnail = playerPoint.distanceTo2D(this.snailWorldPoint);
+        boolean snailShouldMove = this.tickCount % this.config.moveSpeed() == 0 || (distanceToSnail <= RECALCULATION_THRESHOLD && this.config.speedBoost());
 
-        if (lastPlayerPoint == null) lastPlayerPoint = playerPoint;
+        if (this.lastPlayerPoint == null) this.lastPlayerPoint = playerPoint;
 
         if (!snailShouldMove) return;
 
-        if (pathfinder == null) {
-            calculatePath(snailWorldPoint, playerPoint, false, false);
+        if (this.pathfinder == null) {
+            this.calculatePath(this.snailWorldPoint, playerPoint, false, false);
             return;
         }
 
-        if (currentPathIndex < pathfinder.getPath().size() && pathfinder.isComplete) {
-            int index = Math.max(pathfinder.getPath().size() - 1 - this.currentPathIndex, 0);
-//			log.debug("index: {}", index);
-            WorldPoint target = pathfinder.getPath().get(index);
-//			log.debug("target: {}", target);
-            this.snailObject.setLocation(LocalPoint.fromWorld(client, target), target.getPlane());
-            double angle = Math.atan2(snailWorldPoint.getX() - target.getX(), snailWorldPoint.getY() - target.getY());
-            int jau = (int) Math.round(angle / Perspective.UNIT) & 2047;
-            this.snailObject.setOrientation(jau);
-            setSnailWorldPoint(target);
-            currentPathIndex++;
+        if (this.currentPathIndex < this.pathfinder.getPath().size() && this.pathfinder.isComplete) {
+            int index = Math.max(this.pathfinder.getPath().size() - 1 - this.currentPathIndex, 0);
+            WorldPoint target = this.pathfinder.getPath().get(index);
+            this.setSnailWorldPoint(target);
+            this.currentPathIndex++;
         }
 
-        if (config.horrorMode()) {
-            performHorrorModeChecks(distanceToSnail);
+        if (this.config.horrorMode()) {
+            this.performHorrorModeChecks(distanceToSnail);
         }
 
-        if (checkTouching()) {
+        if (this.checkTouching()) {
+            log.debug("touching!");
             final ChatMessageBuilder message = new ChatMessageBuilder()
                 .append(ChatColorType.HIGHLIGHT)
                 .append("You have been touched by the snail. You are dead.");
 
-            if (isAlive) {
-                isDying = true;
-                deathPoint = playerPoint;
-                chatMessageManager.queue(QueuedMessage.builder()
+            log.debug("isAlive: {}", this.isAlive);
+            if (this.isAlive) {
+                this.isDying = true;
+                this.deathPoint = playerPoint;
+                this.chatMessageManager.queue(QueuedMessage.builder()
                     .type(ChatMessageType.GAMEMESSAGE)
                     .runeLiteFormattedMessage(message.build())
                     .build());
 
-                client.playSoundEffect(SoundEffectID.ATTACK_HIT);
+                this.client.playSoundEffect(SoundEffectID.ATTACK_HIT);
 
-                client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DEATH);
-                client.getLocalPlayer().setAnimationFrame(0);
-                client.getLocalPlayer().createSpotAnim(SNARE_SPOT_ANIM_ID, SpotanimID.SNARE_IMPACT, 0, 0);
+                this.client.getLocalPlayer().setAnimation(AnimationID.HUMAN_DEATH);
+                this.client.getLocalPlayer().setAnimationFrame(0);
+                this.client.getLocalPlayer().createSpotAnim(SNARE_SPOT_ANIM_ID, SpotanimID.SNARE_IMPACT, 0, 0);
 
-                isAlive = false;
-                clientThread.invoke(() -> client.runScript(ScriptID.CHAT_PROMPT_INIT));
-                saveData();
+                this.isAlive = false;
+                this.clientThread.invoke(() -> this.client.runScript(ScriptID.CHAT_PROMPT_INIT));
+                this.saveData();
             }
         }
-        recalculatePath();
-
-        lastPlayerPoint = playerPoint;
-
-        if (Instant.EPOCH.getEpochSecond() - lastSaveTime >= 60 && isLoggedIn) {
-            saveData();
-        }
+        this.recalculatePath();
     }
 
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage) {
-        if (client.getGameState() != GameState.LOADING && client.getGameState() != GameState.LOGGED_IN) {
+        if (this.client.getGameState() != GameState.LOADING && this.client.getGameState() != GameState.LOGGED_IN) {
             return;
         }
 
-        if (client.getLocalPlayer().getName() == null) return;
+        if (this.client.getLocalPlayer().getName() == null) return;
 
         String name = Text.removeTags(chatMessage.getName());
-        boolean isSelf = client.getLocalPlayer().getName().equalsIgnoreCase(name);
+        boolean isSelf = this.client.getLocalPlayer().getName().equalsIgnoreCase(name);
 
         switch (chatMessage.getType()) {
             case PRIVATECHAT:
             case MODPRIVATECHAT:
             case FRIENDSCHAT:
             case CLAN_CHAT:
-                if (!onSeasonalWorld && isSelf) {
-                    addSnailmanIcon(chatMessage);
+                if (!this.onSeasonalWorld && isSelf) {
+                    this.addSnailmanIcon(chatMessage);
                 }
                 break;
             case PUBLICCHAT:
             case MODCHAT:
                 if (isSelf) {
-                    addSnailmanIcon(chatMessage);
+                    this.addSnailmanIcon(chatMessage);
                 }
                 break;
         }
@@ -410,30 +435,85 @@ public class SnailManModePlugin extends Plugin {
             return;
         }
 
-        updateChatbox();
+        this.updateChatbox();
     }
 
     @Subscribe
     public void onBeforeRender(BeforeRender event) {
-        updateChatbox();
+        this.updateChatbox();
     }
 
     @Subscribe
     public void onHitsplatApplied(HitsplatApplied event) {
         if (event.getActor() instanceof Player) {
-            log.debug("hitsplat applied: {}", event.getActor().getName());
             final Player player = (Player) event.getActor();
 
-            if (isDying) {
-                isDying = false;
-                client.getLocalPlayer().setAnimation(-1);
-                client.getLocalPlayer().removeSpotAnim(SNARE_SPOT_ANIM_ID);
+            if (this.isDying) {
+                this.isDying = false;
+                this.client.getLocalPlayer().setAnimation(-1);
+                this.client.getLocalPlayer().removeSpotAnim(SNARE_SPOT_ANIM_ID);
             }
         }
     }
 
+    @Subscribe
+    public void onConfigChanged(ConfigChanged configChanged) {
+        if (configChanged.getGroup().equals(CONFIG_GROUP)) {
+            if (configChanged.getKey().equals(CONFIG_KEY_VISUAL_MODE)) {
+                if (this.config.visualMode() == SnailManModeConfig.SnailVisualMode.MODEL) {
+                    this.createSnailObject();
+                } else {
+                    if (this.snailObject != null) {
+                        this.destroySnailObject();
+                    }
+                }
+            }
+        }
+    }
+
+    private void createSnailObject() {
+        this.clientThread.invoke(() -> {
+            if (this.snailObject != null) {
+                this.snailObject.setActive(false);
+            }
+            this.snailObject = this.client.createRuneLiteObject();
+            this.snailObject.setModel(this.snailModel);
+            this.snailObject.setAnimation(this.snailAnimation);
+            this.snailObject.setActive(true);
+            this.setSnailWorldPoint(this.snailWorldPoint);
+        });
+    }
+
+    private void destroySnailObject() {
+        this.clientThread.invoke(() -> {
+            if (this.snailObject != null) {
+                this.snailObject.setActive(false);
+            }
+            this.snailObject = null;
+        });
+    }
+
+    private void setSnailWorldPoint(WorldPoint worldPoint) {
+        if (worldPoint == null) return;
+        WorldPoint previousLocation = this.snailWorldPoint;
+        this.snailWorldPoint = worldPoint;
+
+        if (this.snailObject == null) return;
+        LocalPoint localPoint = LocalPoint.fromWorld(this.client, worldPoint);
+//        log.debug("setting snail world point to {} {}", worldPoint, localPoint);
+        if (localPoint == null) return;
+//        log.debug("{}", this.snailObject);
+        this.snailObject.setLocation(localPoint, worldPoint.getPlane());
+        this.snailObject.setActive(true);
+
+        if (previousLocation == null) return;
+        double angle = Math.atan2(previousLocation.getX() - worldPoint.getX(), previousLocation.getY() - worldPoint.getY());
+        int jau = (int) Math.round(angle / Perspective.UNIT) & 2047;
+        this.snailObject.setOrientation(jau);
+    }
+
     private void addMenuEntry(MenuEntryAdded event, String option, String target, WorldPoint worldPoint) {
-        client.getMenu().createMenuEntry(1)
+        this.client.getMenu().createMenuEntry(1)
             .setOption(option)
             .setTarget(target)
             .setParam0(event.getActionParam0())
@@ -444,39 +524,40 @@ public class SnailManModePlugin extends Plugin {
     }
 
     private void onMenuOptionClicked(MenuEntry entry, WorldPoint worldPoint) {
-        Player localPlayer = client.getLocalPlayer();
+        Player localPlayer = this.client.getLocalPlayer();
 
         WorldPoint currentLocation = localPlayer.getWorldLocation();
         if (entry.getOption().equals(ADD_START) && entry.getTarget().equals(TRANSPORT)) {
-            transportStart = currentLocation;
+            this.transportStart = currentLocation;
         }
 
         if (entry.getOption().equals(ADD_END) && entry.getTarget().equals(TRANSPORT)) {
-            WorldPoint transportEnd = client.getLocalPlayer().getWorldLocation();
-            String transportText = transportStart.getX() + " " + transportStart.getY() + " " + transportStart.getPlane() + "\t" +
+            WorldPoint transportEnd = this.client.getLocalPlayer().getWorldLocation();
+            String transportText = this.transportStart.getX() + " " + this.transportStart.getY() + " " + this.transportStart.getPlane() + "\t" +
                 currentLocation.getX() + " " + currentLocation.getY() + " " + currentLocation.getPlane() + "\t" +
-                lastClick.getOption() + " " + Text.removeTags(lastClick.getTarget()) + " " + lastClick.getIdentifier();
+                this.lastClick.getOption() + " " + Text.removeTags(this.lastClick.getTarget()) + " " + this.lastClick.getIdentifier();
             System.out.println(transportText);
             Pathfinder.writeTransportToFile(transportText);
-            Transport transport = new Transport(transportStart, transportEnd);
-            pathfinderConfig.getTransports().computeIfAbsent(transportStart, k -> new ArrayList<>()).add(transport);
+            Transport transport = new Transport(this.transportStart, transportEnd);
+            this.pathfinderConfig.getTransports().computeIfAbsent(this.transportStart, k -> new ArrayList<>()).add(transport);
         }
 
         if (entry.getOption().equals(MOVE_SNAIL) && entry.getTarget().equals(SNAIL)) {
             log.debug("entry: {}", worldPoint);
-            snailWorldPoint = worldPoint;
+            this.snailWorldPoint = worldPoint;
             log.debug("force recalculating path");
-            recalculatePath(true);
+            this.recalculatePath(true);
+            this.createSnailObject();
 //			calculatePath(snailWorldPoint, lastPlayerPoint, true, false);
         }
 
         if (entry.getType() != MenuAction.WALK) {
-            lastClick = entry;
+            this.lastClick = entry;
         }
     }
 
     private void performHorrorModeChecks(long distanceToSnail) {
-        if (config.pauseSnail() || !isAlive) return;
+        if (this.config.pauseSnail() || !this.isAlive) return;
 
         if (distanceToSnail < SNAIL_HORROR_DISTANCE && !horrorCloseFlag) {
             horrorCloseFlag = true;
@@ -484,32 +565,32 @@ public class SnailManModePlugin extends Plugin {
                 .append(ChatColorType.HIGHLIGHT)
                 .append("You see something moving in the fog...");
 
-            chatMessageManager.queue(QueuedMessage.builder()
+            this.chatMessageManager.queue(QueuedMessage.builder()
                 .type(ChatMessageType.GAMEMESSAGE)
                 .runeLiteFormattedMessage(message.build())
                 .build());
 
             TeleportTimer timer = new TeleportTimer(
                 Duration.of(10, ChronoUnit.SECONDS),
-                itemManager.getImage(ItemID.SNELM_ROUND_SWAMP),
+                this.itemManager.getImage(ItemID.SNELM_ROUND_SWAMP),
                 this
             );
-            infoBoxManager.addInfoBox(timer);
+            this.infoBoxManager.addInfoBox(timer);
 
-            client.playSoundEffect(SNAIL_HORROR_SOUND);
+            this.client.playSoundEffect(SNAIL_HORROR_SOUND);
         } else if (distanceToSnail > 30 && horrorCloseFlag) {
             horrorCloseFlag = false;
         }
     }
 
     private void updateChatbox() {
-        if (!isAlive) {
+        if (!this.isAlive) {
             return;
         }
 
-        Widget chatboxTypedText = client.getWidget(InterfaceID.Chatbox.INPUT);
+        Widget chatboxTypedText = this.client.getWidget(InterfaceID.Chatbox.INPUT);
 
-        if (snailmanIconOffset == -1) {
+        if (this.snailmanIconOffset == -1) {
             return;
         }
 
@@ -518,13 +599,13 @@ public class SnailManModePlugin extends Plugin {
         }
 
         String[] chatbox = chatboxTypedText.getText().split(":", 2);
-        String rsn = Objects.requireNonNull(client.getLocalPlayer()).getName();
+        String rsn = Objects.requireNonNull(this.client.getLocalPlayer()).getName();
 
-        chatboxTypedText.setText(getImgTag(snailmanIconOffset) + Text.removeTags(rsn) + ":" + chatbox[1]);
+        chatboxTypedText.setText(getImgTag(this.snailmanIconOffset) + Text.removeTags(rsn) + ":" + chatbox[1]);
     }
 
     private boolean isSeasonalWorld(int worldNumber) {
-        WorldResult worlds = worldService.getWorlds();
+        WorldResult worlds = this.worldService.getWorlds();
         if (worlds == null) {
             return false;
         }
@@ -534,70 +615,70 @@ public class SnailManModePlugin extends Plugin {
     }
 
     private void recalculatePath() {
-        recalculatePath(false);
+        this.recalculatePath(false);
     }
 
     private void recalculatePath(boolean force) {
-        if (!isLoggedIn) return;
+        if (!this.isLoggedIn) return;
 
-        if (client.getLocalPlayer().getWorldView().isInstance()) {
-            pathfinder = null;
+        if (this.client.getLocalPlayer().getWorldView().isInstance()) {
+            this.pathfinder = null;
             return;
         }
 
-        WorldPoint playerPoint = client.getLocalPlayer().getWorldLocation();
-        final int distanceFromPlayer = snailWorldPoint.distanceTo2D(playerPoint);
+        WorldPoint playerPoint = this.client.getLocalPlayer().getWorldLocation();
+        final int distanceFromPlayer = this.snailWorldPoint.distanceTo2D(playerPoint);
 //		log.debug("distanceFromPlayer: {}", distanceFromPlayer);
 
-        boolean forceRecalc = force || lastPlayerPoint.getPlane() != playerPoint.getPlane();
+        boolean forceRecalc = force || this.lastPlayerPoint.getPlane() != playerPoint.getPlane();
 //		log.debug("forceRecalc: {}", forceRecalc);
 
 //		log.debug("distanceFromPlayer < RECALCULATION_THRESHOLD: {}", distanceFromPlayer < RECALCULATION_THRESHOLD);
         if (distanceFromPlayer < RECALCULATION_THRESHOLD) {
 //			log.debug("start: {}", pathfinder.getStart());
 //			log.debug("distance from start: {}", pathfinder.getStart().distanceTo2D(playerPoint));
-            if (force || pathfinder.getStart().distanceTo2D(playerPoint) > 0) {
+            if (force || this.pathfinder.getStart().distanceTo2D(playerPoint) > 0) {
 //				log.debug("force calculating path");
-                calculatePath(snailWorldPoint, playerPoint, true, false);
+                this.calculatePath(this.snailWorldPoint, playerPoint, true, false);
                 this.currentPathIndex = 1;
             }
         } else {
 //			log.debug("not below recalculation threshold");
             // Limit number of recalculations done during player movement
 //			log.debug("{}", pathfinder.getStart().distanceTo2D(playerPoint) >= RECALCULATION_THRESHOLD || forceRecalc);
-            if (pathfinder.getStart().distanceTo2D(playerPoint) >= RECALCULATION_THRESHOLD || forceRecalc) {
-                boolean useExistingPath = lastPlayerPoint.distanceTo(playerPoint) < 100;
+            if (this.pathfinder.getStart().distanceTo2D(playerPoint) >= RECALCULATION_THRESHOLD || forceRecalc) {
+                boolean useExistingPath = this.lastPlayerPoint.distanceTo(playerPoint) < 100;
 //				log.debug("useExistingPath: {}", useExistingPath);
-                calculatePath(snailWorldPoint, playerPoint, forceRecalc, useExistingPath);
+                this.calculatePath(this.snailWorldPoint, playerPoint, forceRecalc, useExistingPath);
                 this.currentPathIndex = 1;
             }
         }
     }
 
     private boolean checkTouching() {
-        WorldPoint playerPoint = client.getLocalPlayer().getWorldLocation();
-        final int distanceFromPlayer = snailWorldPoint.distanceTo2D(playerPoint);
+        WorldPoint playerPoint = this.client.getLocalPlayer().getWorldLocation();
+        final int distanceFromPlayer = this.snailWorldPoint.distanceTo2D(playerPoint);
 
         return distanceFromPlayer <= 0;
     }
 
     private void calculatePath(WorldPoint start, WorldPoint end, boolean force, boolean useExisting) {
-        if (pathfinder != null && !pathfinder.isDone() && !force) return;
+        if (this.pathfinder != null && !this.pathfinder.isDone() && !force) return;
 
-        if (client.getLocalPlayer().getWorldView().isInstance()) return;
+        if (this.client.getLocalPlayer().getWorldView().isInstance()) return;
 
-        List<WorldPoint> existingPath = useExisting ? pathfinder.getPath() : null;
+        List<WorldPoint> existingPath = useExisting ? this.pathfinder.getPath() : null;
 
-        pathfinder = new Pathfinder(pathfinderConfig, end, start, existingPath);
+        this.pathfinder = new Pathfinder(this.pathfinderConfig, end, start, existingPath);
 
     }
 
     public Point mapWorldPointToGraphicsPoint(WorldPoint worldPoint) {
-        WorldMap worldMap = client.getWorldMap();
+        WorldMap worldMap = this.client.getWorldMap();
 
         float pixelsPerTile = worldMap.getWorldMapZoom();
 
-        Widget map = client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER);
+        Widget map = this.client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER);
         if (map != null) {
             Rectangle worldMapRect = map.getBounds();
 
@@ -661,21 +742,21 @@ public class SnailManModePlugin extends Plugin {
             throw new RuntimeException(e);
         }
 
-        pathfinderConfig = new PathfinderConfig(new CollisionMap(64, compressedRegions), transports, client);
+        this.pathfinderConfig = new PathfinderConfig(new CollisionMap(64, compressedRegions), transports, this.client);
 
-        final IndexedSprite[] modIcons = client.getModIcons();
+        final IndexedSprite[] modIcons = this.client.getModIcons();
 
-        if (snailmanIconOffset != -1 || modIcons == null) {
+        if (this.snailmanIconOffset != -1 || modIcons == null) {
             return;
         }
 
-        BufferedImage image = ImageUtil.loadImageResource(getClass(), "/helm.png");
-        IndexedSprite indexedSprite = ImageUtil.getImageIndexedSprite(image, client);
-        snailmanIconOffset = modIcons.length;
+        BufferedImage image = ImageUtil.loadImageResource(this.getClass(), "/helm.png");
+        IndexedSprite indexedSprite = ImageUtil.getImageIndexedSprite(image, this.client);
+        this.snailmanIconOffset = modIcons.length;
 
         final IndexedSprite[] newModIcons = Arrays.copyOf(modIcons, modIcons.length + 1);
         newModIcons[newModIcons.length - 1] = indexedSprite;
 
-        client.setModIcons(newModIcons);
+        this.client.setModIcons(newModIcons);
     }
 }

@@ -24,7 +24,7 @@ public abstract class SplitFlagMap {
     public SplitFlagMap(int regionSize, Map<Position, byte[]> compressedRegions, int flagCount) {
         this.regionSize = regionSize;
         this.flagCount = flagCount;
-        regionMaps = CacheBuilder
+        this.regionMaps = CacheBuilder
             .newBuilder()
             .weigher((Weigher<Position, FlagMap>) (k, v) -> v.flags.size() / 8)
             .maximumWeight(MAXIMUM_SIZE)
@@ -45,7 +45,7 @@ public abstract class SplitFlagMap {
 
     public boolean get(int x, int y, int z, int flag) {
         try {
-            return regionMaps.get(new Position(x / regionSize, y / regionSize)).get(x, y, z, flag);
+            return this.regionMaps.get(new Position(x / this.regionSize, y / this.regionSize)).get(x, y, z, flag);
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);
         }
@@ -63,18 +63,18 @@ public abstract class SplitFlagMap {
         @Override
         public boolean equals(Object o) {
             return o instanceof Position &&
-                ((Position) o).x == x &&
-                ((Position) o).y == y;
+                ((Position) o).x == this.x &&
+                ((Position) o).y == this.y;
         }
 
         @Override
         public int hashCode() {
-            return x * 31 + y;
+            return this.x * 31 + this.y;
         }
 
         @Override
         public String toString() {
-            return "(" + x + ", " + y + ")";
+            return "(" + this.x + ", " + this.y + ")";
         }
     }
 }

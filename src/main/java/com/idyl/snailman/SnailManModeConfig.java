@@ -1,9 +1,6 @@
 package com.idyl.snailman;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.Range;
+import net.runelite.client.config.*;
 
 import java.awt.*;
 
@@ -12,45 +9,34 @@ public interface SnailManModeConfig extends Config {
     String CONFIG_GROUP = "snailmanmode";
     String CONFIG_KEY_SNAIL_LOC = "snailWorldPoint";
     String CONFIG_KEY_IS_ALIVE = "isAlive";
+    String CONFIG_KEY_VISUAL_MODE = "visualMode";
+
+    @ConfigItem(
+        keyName = "drawTile",
+        name = "Draw Tile",
+        description = "Draw the snail tile",
+        position = 0
+    )
+    default boolean drawTile() { return false; }
 
     @ConfigItem(
         keyName = "snailColor",
-        name = "Snail Color",
+        name = "Tile Color",
         description = "The color of the snail tile",
         position = 1
     )
-    default Color color() {
+    default Color tileColor() {
         return Color.RED;
     }
 
     @ConfigItem(
-        keyName = "speedBoost",
-        name = "Speed Boost",
-        description = "Snail moves 1 tile per tick when it gets close to you",
-        position = 4
-    )
-    default boolean speedBoost() {
-        return false;
-    }
-
-    @ConfigItem(
-        keyName = "showOnMap",
-        name = "Show Snail on World Map",
-        description = "Show where the snail is on the world map (kind of defeats the purpose but its neat)",
+        keyName = CONFIG_KEY_VISUAL_MODE,
+        name = "Snail Visual Mode",
+        description = "The visual mode of the snail",
         position = 2
     )
-    default boolean showOnMap() {
-        return false;
-    }
-
-    @ConfigItem(
-        keyName = "pauseSnail",
-        name = "Pause Snail",
-        description = "Pause the snail so that it stops following you",
-        position = 5
-    )
-    default boolean pauseSnail() {
-        return false;
+    default SnailVisualMode visualMode() {
+        return SnailVisualMode.MODEL;
     }
 
     @ConfigItem(
@@ -68,12 +54,12 @@ public interface SnailManModeConfig extends Config {
     }
 
     @ConfigItem(
-        keyName = "horrorMode",
-        name = "Horror Mode",
-        description = "Plays a sound when the snail is nearby (best experienced with minimum render distance & maximum fog in the GPU plugin)",
-        position = 7
+        keyName = "speedBoost",
+        name = "Speed Boost",
+        description = "Snail moves 1 tile per tick when it gets close to you",
+        position = 4
     )
-    default boolean horrorMode() {
+    default boolean speedBoost() {
         return false;
     }
 
@@ -89,5 +75,50 @@ public interface SnailManModeConfig extends Config {
     )
     default int drawDistance() {
         return 32;
+    }
+
+    @ConfigItem(
+        keyName = "horrorMode",
+        name = "Horror Mode",
+        description = "Plays a sound when the snail is nearby (best experienced with minimum render distance & maximum fog in the GPU plugin)",
+        position = 7
+    )
+    default boolean horrorMode() {
+        return false;
+    }
+
+    @ConfigSection(
+        name = "Extras",
+        description = "Extra settings not often used",
+        position = 99,
+        closedByDefault = true
+    )
+    String extrasSection = "extras";
+
+    @ConfigItem(
+        keyName = "showOnMap",
+        name = "Show Snail on World Map",
+        description = "Show where the snail is on the world map (kind of defeats the purpose but its neat)",
+        section = extrasSection,
+        position = 0
+    )
+    default boolean showOnMap() {
+        return false;
+    }
+
+    @ConfigItem(
+        keyName = "pauseSnail",
+        name = "Pause Snail",
+        description = "Pause the snail so that it stops following you",
+        section = extrasSection,
+        position = 1
+    )
+    default boolean pauseSnail() {
+        return false;
+    }
+
+    enum SnailVisualMode {
+        SPRITE,
+        MODEL,
     }
 }

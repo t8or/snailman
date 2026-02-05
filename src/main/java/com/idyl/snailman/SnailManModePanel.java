@@ -23,7 +23,7 @@ public class SnailManModePanel extends PluginPanel {
     /* This is the panel the tabs' respective panels will be displayed on. */
     private final JPanel display = new JPanel();
     private final Map<Tab, MaterialTab> uiTabs = new HashMap<>();
-    private final MaterialTabGroup tabGroup = new MaterialTabGroup(display);
+    private final MaterialTabGroup tabGroup = new MaterialTabGroup(this.display);
 
     private boolean active;
 
@@ -33,21 +33,22 @@ public class SnailManModePanel extends PluginPanel {
         this.itemManager = itemManager;
         this.plugin = plugin;
 
-        setLayout(new BorderLayout());
-        setBackground(ColorScheme.DARK_GRAY_COLOR);
-        display.setBorder(new EmptyBorder(10, 10, 8, 10));
-        display.setLayout(new GridLayout(0, 1, 0, 5));
+        this.setLayout(new BorderLayout());
+        this.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        this.display.setBorder(new EmptyBorder(10, 10, 8, 10));
+        this.display.setLayout(new GridLayout(0, 1, 0, 5));
 
         JButton resetButton = new JButton("Reset Snail Data");
         resetButton.addActionListener(l -> plugin.reset());
 
-        display.add(resetButton);
+        this.display.add(resetButton);
 
-        JButton testAnim = new JButton("Test Death Anim");
-        testAnim.addActionListener(l -> plugin.testDeathAnim());
+        if (this.plugin.developerMode) {
+            JButton testAnim = new JButton("Test Death Anim");
+            testAnim.addActionListener(l -> plugin.testDeathAnim());
+            this.display.add(testAnim);
+        }
 
-        display.add(testAnim);
-
-        add(display, BorderLayout.NORTH);
+        this.add(this.display, BorderLayout.NORTH);
     }
 }

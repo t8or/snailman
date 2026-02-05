@@ -33,24 +33,24 @@ public class SnailManModeOverlay extends Overlay {
         this.plugin = plugin;
         this.developerMode = developerMode;
 
-        setPosition(OverlayPosition.DYNAMIC);
-        setPriority(OverlayPriority.LOW);
-        setLayer(OverlayLayer.ABOVE_SCENE);
+        this.setPosition(OverlayPosition.DYNAMIC);
+        this.setPriority(OverlayPriority.LOW);
+        this.setLayer(OverlayLayer.ABOVE_SCENE);
     }
 
     private void renderTransports(Graphics2D graphics) {
-        for (WorldPoint a : plugin.pathfinderConfig.getTransports().keySet()) {
-            drawTransport(graphics, a);
+        for (WorldPoint a : this.plugin.pathfinderConfig.getTransports().keySet()) {
+            this.drawTransport(graphics, a);
 
-            java.awt.Point ca = tileCenter(a);
+            java.awt.Point ca = this.tileCenter(a);
 
             if (ca == null) {
                 continue;
             }
 
-            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
+            for (Transport t : this.plugin.pathfinderConfig.getTransports().get(a)) {
                 WorldPoint b = t.getOrigin();
-                java.awt.Point cb = tileCenter(b);
+                java.awt.Point cb = this.tileCenter(b);
 
                 if (cb != null) {
                     graphics.drawLine(ca.x, ca.y, cb.x, cb.y);
@@ -58,7 +58,7 @@ public class SnailManModeOverlay extends Overlay {
             }
 
             StringBuilder s = new StringBuilder();
-            for (Transport t : plugin.pathfinderConfig.getTransports().get(a)) {
+            for (Transport t : this.plugin.pathfinderConfig.getTransports().get(a)) {
                 WorldPoint b = t.getDestination();
                 if (b.getPlane() > a.getPlane()) {
                     s.append("+");
@@ -74,16 +74,16 @@ public class SnailManModeOverlay extends Overlay {
     }
 
     private java.awt.Point tileCenter(WorldPoint b) {
-        if (b.getPlane() != client.getPlane()) {
+        if (b.getPlane() != this.client.getPlane()) {
             return null;
         }
 
-        LocalPoint lp = LocalPoint.fromWorld(client, b);
+        LocalPoint lp = LocalPoint.fromWorld(this.client, b);
         if (lp == null) {
             return null;
         }
 
-        Polygon poly = Perspective.getCanvasTilePoly(client, lp);
+        Polygon poly = Perspective.getCanvasTilePoly(this.client, lp);
         if (poly == null) {
             return null;
         }
@@ -95,50 +95,55 @@ public class SnailManModeOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        if (this.developerMode) renderTransports(graphics);
+        if (this.developerMode) this.renderTransports(graphics);
 
-        WorldPoint snailPoint = plugin.getSnailWorldPoint();
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        WorldPoint snailPoint = this.plugin.getSnailWorldPoint();
+        WorldPoint playerLocation = this.client.getLocalPlayer().getWorldLocation();
 
-        if (this.developerMode && plugin.pathfinder != null) {
-            List<WorldPoint> path = plugin.pathfinder.getPath();
+        if (this.developerMode && this.plugin.pathfinder != null) {
+            List<WorldPoint> path = this.plugin.pathfinder.getPath();
             for (WorldPoint point : path) {
-                drawTile(graphics, point, Color.GREEN, new BasicStroke((float) 2));
+                this.drawTile(graphics, point, Color.GREEN, new BasicStroke((float) 2));
             }
         }
 
-        long drawDistance = config.drawDistance();
+        long drawDistance = this.config.drawDistance();
 
         if (snailPoint.distanceTo(playerLocation) >= drawDistance) {
             return null;
         }
 
-//        drawTile(graphics, snailPoint, config.color(), new BasicStroke((float) 2));
-//        drawImg(graphics, snailPoint);
+        if (this.config.drawTile()) {
+            this.drawTile(graphics, snailPoint, this.config.tileColor(), new BasicStroke((float) 2));
+        }
+        if (this.config.visualMode() == SnailManModeConfig.SnailVisualMode.SPRITE) {
+            this.drawImg(graphics, snailPoint);
+        }
         return null;
     }
 
     private void drawTile(Graphics2D graphics, WorldPoint point, Color color, Stroke borderStroke) {
 
-        LocalPoint lp = LocalPoint.fromWorld(client, point);
+        LocalPoint lp = LocalPoint.fromWorld(this.client, point);
         if (lp == null) {
             return;
         }
 
-        Polygon poly = Perspective.getCanvasTilePoly(client, lp);
+        Polygon poly = Perspective.getCanvasTilePoly(this.client, lp);
         if (poly != null) {
             OverlayUtil.renderPolygon(graphics, poly, color, new Color(0, 0, 0, 1), borderStroke);
         }
     }
 
     private void drawImg(Graphics2D graphics, WorldPoint point) {
-        LocalPoint lp = LocalPoint.fromWorld(client, point);
+        LocalPoint lp = LocalPoint.fromWorld(this.client, point);
         if (lp == null) {
             return;
         }
 
-        BufferedImage snailShell = getSnailImage();
-        Point canvasImageLocation = Perspective.getCanvasImageLocation(client, lp, snailShell, 75);
+        BufferedImage snailShell = this.getSnailImage();
+//        snailShell = ImageUtil.resizeImage(snailShell, snailShell.getWidth() * 10, snailShell.getHeight() * 10);
+        Point canvasImageLocation = Perspective.getCanvasImageLocation(this.client, lp, snailShell, 75);
 
         if (canvasImageLocation == null) {
             return;
@@ -148,16 +153,16 @@ public class SnailManModeOverlay extends Overlay {
     }
 
     private void drawTransport(Graphics2D graphics, WorldPoint point) {
-        if (point.getPlane() != client.getPlane()) {
+        if (point.getPlane() != this.client.getPlane()) {
             return;
         }
 
-        LocalPoint lp = LocalPoint.fromWorld(client, point);
+        LocalPoint lp = LocalPoint.fromWorld(this.client, point);
         if (lp == null) {
             return;
         }
 
-        Polygon poly = Perspective.getCanvasTilePoly(client, lp);
+        Polygon poly = Perspective.getCanvasTilePoly(this.client, lp);
         if (poly == null) {
             return;
         }
@@ -167,9 +172,9 @@ public class SnailManModeOverlay extends Overlay {
     }
 
     private BufferedImage getSnailImage() {
-        if (snailShell == null) {
-            snailShell = ImageUtil.loadImageResource(getClass(), "/snail_shell.png");
+        if (this.snailShell == null) {
+            this.snailShell = ImageUtil.loadImageResource(this.getClass(), "/snail_shell.png");
         }
-        return snailShell;
+        return this.snailShell;
     }
 }
